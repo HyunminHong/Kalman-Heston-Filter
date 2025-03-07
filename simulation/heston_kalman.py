@@ -3,14 +3,13 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Get the parent directory of the notebook
-parent_dir = Path.cwd().parent
-
-# Add the parent directory to sys.path
+current_dir = Path(__file__).resolve().parent
+parent_dir = current_dir.parent
 sys.path.insert(0, str(parent_dir))
 
-# Import modules
-from model.kalman_heston import *
+from model.kalman_heston import kalman_like_heston_filter, estimate_params_qmle
+from model.heston_simulation import simulate_heston
+from model.draw_noise import draw_noise
 
 def plot_heston_vs_kalman(V_true, V_pred, V_filt, title=None):
     """
@@ -88,7 +87,7 @@ if __name__ == "__main__":
         (1e-8, None),      # gamma >= 0
         (1e-8, None)       # delta >= 0
     ]
-    
+
     result = estimate_params_qmle(y_series, V0=V0_initial, P0=P0_init, init_params=init_guess)
     estimated_params = result.x
 
