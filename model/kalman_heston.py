@@ -1,15 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 
-def kalman_like_heston_filter(
-    y: np.ndarray,
-    alpha: float,
-    beta: float,
-    gamma: float,
-    delta: float,
-    V0: float,
-    P0: float
-):
+def kalman_like_heston_filter(y: np.ndarray, alpha: float, beta: float, gamma: float, delta: float, V0: float, P0: float):
     """
     Kalman-like Heston filter (approximation) for the discrete-time model.
     
