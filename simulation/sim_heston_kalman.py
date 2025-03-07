@@ -10,9 +10,7 @@ sys.path.insert(0, str(parent_dir))
 
 # Now Python sees "model" as a valid package
 from model.kalman_heston import kalman_like_heston_filter, estimate_params_qmle
-from model.heston_simulation import simulate_heston
-from model.draw_noise import draw_noise
-
+from model.heston import heston_DGP
 
 def plot_heston_vs_kalman(V_true, V_pred, V_filt, title=None):
     """
@@ -68,7 +66,12 @@ def plot_heston_vs_kalman(V_true, V_pred, V_filt, title=None):
 
 if __name__ == "__main__":
     # True parameters for the simulated Heston model (unknown in estimation):
-    alpha_true, beta_true, gamma_true, delta_true = 0.1, 0.9, 0.3, 0.2
+    true_params = {
+        "alpha": 0.1,
+        "beta": 0.9, 
+        "gamma": 0.3,
+        "delta": 0.2
+    }
     T = 1000           # Number of observations for estimation.
     burn_in = 100      # Burn-in period.
 
@@ -77,10 +80,9 @@ if __name__ == "__main__":
     P0_init = 0.1       # Initial filtering uncertainty
 
     # Simulate the Heston model (the "real" data)
-    V_series, y_series = simulate_heston(
-        T, alpha_true, beta_true, gamma_true, delta_true,
-        V0=V0_initial, seed=42, burn_in=burn_in
-    )
+    noise_t = {'df': 3}
+    # noise_par = {'alpha': 2.5}
+    V_series, y_series = heston_DGP(T, **true_params, V0=V0_initial, seed=42, noise_dist='t', noise_params=noise_t, burn_in=burn_in)
 
     # QMLE Estimation: Start with an initial guess reflecting a diffusion process.
     init_guess = np.array([0.5, 0.5, 0.5, 0.5])
@@ -95,11 +97,9 @@ if __name__ == "__main__":
     estimated_params = result.x
 
     # Now use the estimated parameters in the Kalman filter
-    V_pred, P_pred, V_filt, P_filt = kalman_like_heston_filter(
-        y_series, *estimated_params, V0=V0_initial, P0=P0_init
-    )
+    V_pred, P_pred, V_filt, P_filt = kalman_like_heston_filter(y_series, *estimated_params, V0=V0_initial, P0=P0_init)
 
-    # (Optional) Print QMLE results if needed
+    # Print QMLE results if needed
     print("Estimated parameters:", estimated_params)
 
     # Plot the simulated Heston process vs. the Kalman approximation (using estimated parameters)
