@@ -109,13 +109,7 @@ def kalman_like_heston_loglike(
         ll += ll_t
     return ll
 
-def estimate_params_qmle(
-    y: np.ndarray,
-    V0: float,
-    P0: float,
-    init_params: np.ndarray = None,
-    bounds=None
-):
+def estimate_params_qmle(y: np.ndarray, V0: float, P0: float, init_params: np.ndarray = None, bounds=None):
     """
     Estimate the model parameters via Quasi-Maximum Likelihood Estimation.
     
@@ -147,37 +141,44 @@ def estimate_params_qmle(
     return result
 
 if __name__ == "__main__":
-    # True parameters for the Heston model:
+    # True parameters for the simulated Heston model (unknown in estimation):
     alpha_true, beta_true, gamma_true, delta_true = 0.1, 0.9, 0.3, 0.2
-    T = 1000           # Number of observations to use in estimation.
-    burn_in = 500      # Burn-in period to start from the diffusion process.
-    
-    # For the diffusion, choose an arbitrary starting value that is far from the stationary state.
-    V0_initial = 10.0  # "Large enough" initial variance
-    
-    # We set an initial uncertainty for filtering
-    P0_init = 0.1
-    
-    # Simulate with burn-in (here we use the default noise: 'normal')
+    T = 10000           # Number of observations for estimation.
+    burn_in = 100      # Burn-in period.
+
+    # Arbitrary diffusion starting value (since we don't know the true V):
+    V0_initial = 10.0   # Use this as initial guess for the latent state in filtering
+    P0_init = 0.1       # Initial filtering uncertainty
+
+    # Simulate the Heston model (the "real" data)
     V_series, y_series = simulate_heston(
         T, alpha_true, beta_true, gamma_true, delta_true,
         V0=V0_initial, seed=42, burn_in=burn_in
     )
-    
-    # Optionally, print the initial few values to inspect convergence
-    print("After burn-in, first 5 latent V values:", V_series[:5])
-    print("After burn-in, first 5 observations y:", y_series[:5])
-    
-    # 2) Filter with the true parameters (using the latent state after burn-in)
+
+    # QMLE Estimation: Start with an initial guess reflecting a diffusion process.
+    init_guess = np.array([0.5, 0.5, 0.5, 0.5])
+    bounds = [
+        (1e-8, None),      # alpha >= 0
+        (1e-8, 1 - 1e-8),  # 0 < beta < 1
+        (1e-8, None),      # gamma >= 0
+        (1e-8, None)       # delta >= 0
+    ]
+
+    result = estimate_params_qmle(y_series, V0=V0_initial, P0=P0_init, init_params=init_guess, bounds=bounds)
+    estimated_params = result.x
+
+    # Now use the estimated parameters in the Kalman filter
     V_pred, P_pred, V_filt, P_filt = kalman_like_heston_filter(
-        y_series, alpha_true, beta_true, gamma_true, delta_true, V0=V_series[0], P0=P0_init
+        y_series, *estimated_params, V0=V0_initial, P0=P0_init
     )
-    
-    # 3) QMLE Estimation starting from an initial guess (which is different from the true parameters)
-    init_guess = np.array([0.05, 0.5, 0.1, 0.1])
-    result = estimate_params_qmle(y_series, V0=V_series[0], P0=P0_init, init_params=init_guess)
-    
-    print("\nQMLE optimization success:", result.success)
-    print("Estimated parameters:", result.x)
-    print("True parameters:     ", [alpha_true, beta_true, gamma_true, delta_true])
-    print("Final log-likelihood:", -result.fun)
+
+    # Unpack estimated parameters for clear printing
+    alpha_est, beta_est, gamma_est, delta_est = estimated_params
+
+    # Print the QMLE results in a descriptive format
+    print("QMLE Estimated Parameters:")
+    print(f"  alpha (constant term in variance dynamics):         {alpha_est:.4f}")
+    print(f"  beta  (persistence of variance):                    {beta_est:.4f}")
+    print(f"  gamma (volatility coefficient of variance shocks):  {gamma_est:.4f}")
+    print(f"  delta (scaling of observation noise):               {delta_est:.4f}")
