@@ -8,5 +8,11 @@ TODO:
 * Make a prediction for three different distributions
 * Try unscented Kalman filter for t- and Pareto distribution and measure the performance (first do in-sample, then evolve to out-sample)
 
-The below is the Kalman approximation of the Heston model. Note that the DGP of the Heston model still assumes the normal distributed noise.
 ![Heston_Kalman_sim](https://github.com/user-attachments/assets/ccbdd797-1ca3-4d81-b753-82852c9edbf8)
+Kalman approximation of the Heston model with normal noise.
+
+![normal_vs_pareto](https://github.com/user-attachments/assets/2fd24817-f592-4b1c-a938-b67a2e7ea999)
+Kalman approxmiation (assuming true parameters are known) of the Heston model with Pareto ($\alpha = 3$) noise.
+
+![normal_vs_t](https://github.com/user-attachments/assets/389beaaa-69a8-4fdd-88b5-4b2f9af5d215)
+Kalman approxmiation (assuming true parameters are known) of the Heston model with Pareto ($df = 5$) noise.
