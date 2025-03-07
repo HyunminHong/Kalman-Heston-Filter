@@ -1,5 +1,5 @@
 import numpy as np
-from draw_noise import draw_noise
+from model.draw_noise import draw_noise
 
 def simulate_heston(
     T: int, 

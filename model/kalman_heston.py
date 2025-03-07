@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.optimize import minimize
-from heston_simulation import simulate_heston
 
 def kalman_like_heston_filter(
     y: np.ndarray,
@@ -14,7 +13,7 @@ def kalman_like_heston_filter(
     """
     Kalman-like Heston filter (approximation) for the discrete-time model.
     
-    Follows the approximation in Equation (3–10).
+    Follows the approximation in Equation (3–10) from ID39 - Heston.
     
     Parameters:
     y : ndarray of shape (T,)
@@ -67,12 +66,7 @@ def kalman_like_heston_filter(
     
     return V_pred, P_pred, V_filt, P_filt
 
-def kalman_like_heston_loglike(
-    params: np.ndarray,
-    y: np.ndarray,
-    V0: float,
-    P0: float
-) -> float:
+def kalman_like_heston_loglike(params: np.ndarray, y: np.ndarray, V0: float, P0: float) -> float:
     """
     Compute the log-likelihood for the approximate Kalman-like Heston filter.
     
@@ -94,9 +88,7 @@ def kalman_like_heston_loglike(
         The total log-likelihood.
     """
     alpha, beta, gamma, delta = params
-    V_pred, P_pred, _, _ = kalman_like_heston_filter(
-        y, alpha, beta, gamma, delta, V0, P0
-    )
+    V_pred, P_pred, _, _ = kalman_like_heston_filter(y, alpha, beta, gamma, delta, V0, P0)
     
     T = len(y)
     ll = 0.0
@@ -132,8 +124,13 @@ def estimate_params_qmle(y: np.ndarray, V0: float, P0: float, init_params: np.nd
     if init_params is None:
         init_params = np.array([0.1, 0.8, 0.2, 0.2])
     if bounds is None:
-        bounds = [(1e-8, None), (1e-8, 1 - 1e-8), (1e-8, None), (1e-8, None)]
-    
+        bounds = [
+            (1e-8, None),      # alpha >= 0
+            (1e-8, 1 - 1e-8),  # 0 < beta < 1
+            (1e-8, None),      # gamma >= 0
+            (1e-8, None)       # delta >= 0
+            ]
+
     def neg_loglike(p):
         return -kalman_like_heston_loglike(p, y, V0, P0)
     
