@@ -7,8 +7,8 @@ current_dir = Path(__file__).resolve().parent
 parent_dir = current_dir.parent
 sys.path.insert(0, str(parent_dir))
 
-from model.kalman_heston import kalman_like_heston_filter
-from model.heston import heston_DGP
+from model.kalman_heston_filter import kalman_like_heston_filter
+from model.heston_mod import heston_DGP
 
 def plot_heston_comparison(V_true_x, V_pred_x, V_filt_x, V_true_y, V_pred_y, V_filt_y, dist_x: str, dist_y: str):
     """
