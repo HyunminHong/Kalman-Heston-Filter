@@ -9,8 +9,8 @@ parent_dir = current_dir.parent
 sys.path.insert(0, str(parent_dir))
 
 # Now Python sees "model" as a valid package
-from model.kalman_heston import kalman_like_heston_filter, estimate_params_qmle
-from model.heston import heston_DGP
+from model.kalman_heston_filter import kalman_like_heston_filter, estimate_params_qmle
+from model.heston_mod import heston_DGP
 
 def plot_heston_vs_kalman(V_true, V_pred, V_filt, title=None):
     """
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     P0_init = 0.1       # Initial filtering uncertainty
 
     # Simulate the Heston model (the "real" data)
-    noise_t = {'df': 3}
+    noise_t = {'df': 2.5}
     # noise_par = {'alpha': 2.5}
     V_series, y_series = heston_DGP(T, **true_params, V0=V0_initial, seed=42, noise_dist='t', noise_params=noise_t, burn_in=burn_in)
 
