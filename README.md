@@ -16,3 +16,6 @@ Kalman approxmiation (assuming true parameters are known) of the Heston model wi
 
 ![normal_vs_t](https://github.com/user-attachments/assets/389beaaa-69a8-4fdd-88b5-4b2f9af5d215)
 Kalman approxmiation (assuming true parameters are known) of the Heston model with Pareto ($df = 5$) noise.
+
+![output](https://github.com/user-attachments/assets/3409b1de-a275-4e76-bef0-b2be1077b0ca)
+Kalman-like Heston (ML) vs. GARCH (ML) under normal noise DGP
