@@ -22,3 +22,7 @@ Kalman approxmiation (assuming true parameters are known) of the Heston model wi
 Kalman approxmiation (assuming true parameters are known) of the Heston model with Pareto ($df = 5$) noise.
 
 
+![VSP](https://github.com/user-attachments/assets/864d7a77-ca3f-4d2b-ba5e-3d90a126d6a4)
+Volatility Signature Plot (SPY)
+
+The above VSP justifies to use 10-minute realized volatility 
