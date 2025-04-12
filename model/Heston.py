@@ -52,3 +52,10 @@ class Heston:
         # Exponentiate to get the actual price path
         S = np.exp(X)
         return S, V
+    
+if __name__ == "__main__":
+    heston = Heston()
+
+    S, V = heston.path(1, 0.01, 1000)
+
+    print(np.column_stack((S, V)).shape)
