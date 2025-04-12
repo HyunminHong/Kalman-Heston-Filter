@@ -20,6 +20,7 @@ def kalman_like_heston_filter_2d(params, R, RV, V0, P0):
     # Precompute elementwise product (sigma ⊙ rho) ensuring column vector shape.
     sigma_rho = sigma * rho  # shape (2,1)
 
+    num_steps = T - 1
     V_pred = np.zeros(T)
     P_pred = np.zeros(T)
     V_filt = np.zeros(T)
@@ -29,24 +30,21 @@ def kalman_like_heston_filter_2d(params, R, RV, V0, P0):
     V_filt_current = V0 # V_{0|0}
     P_filt_current = P0 # P_{0|0}
     
-    for t in range(T):
+    for t in range(num_steps):
         if t == 0:
             V_pred_prev = V0
+            P_pred_prev = P0  
+
             V_filt_prev = V0
-            P_pred_prev = P0  # Use the initialized state rather than P_pred[-1].
         else:
             V_pred_prev = V_pred[t-1]
-            P_pred_prev = P_pred[t-1]         # Predicted covariance from the previous step.
+            P_pred_prev = P_pred[t-1]
         
         ## Prediction Step
         H = (beta @ beta.T) * P_pred_prev + (sigma @ sigma.T) * V_filt_prev
-        if np.linalg.cond(H) > 1e10:
-            H_inv = np.linalg.pinv(H)
-        else:
-            H_inv = np.linalg.inv(H)
+        H_inv = np.linalg.pinv(H) if np.linalg.cond(H) > 1e10 else np.linalg.inv(H)
 
-        # Compute Kalman gain using transpose so that K is (1,2).
-        K = np.sqrt(max(V_filt_prev, 0)) * (sigma_rho.T @ H_inv)
+        K = np.sqrt(max(V_filt_prev, 0)) * (sigma_rho.T @ H_inv) # shape (2,1)
         
         # The prediction residual using the previous filtered state.
         residual_pred = Y[t] - mu - beta * V_pred_prev
@@ -57,11 +55,8 @@ def kalman_like_heston_filter_2d(params, R, RV, V0, P0):
         ## Update Step
         residual_update = Y[t+1] - mu - beta * V_pred[t]
         S = (beta @ beta.T) * P_pred[t] + (sigma @ sigma.T) * V_filt_current
-        if np.linalg.cond(S) > 1e10:
-            S_inv = np.linalg.pinv(S)
-        else:
-            S_inv = np.linalg.inv(S)
-        
+        S_inv = np.linalg.pinv(S) if np.linalg.cond(S) > 1e10 else np.linalg.inv(S)
+
         correction_update = P_pred[t] * (beta.T @ (S_inv @ residual_update)).item()
         V_filt[t] = V_pred[t] + correction_update
         scalar_term = (beta.T @ (S_inv @ beta)).item()
