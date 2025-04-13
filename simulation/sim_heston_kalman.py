@@ -41,7 +41,7 @@ def plot_heston_vs_kalman(V_true, V_pred, V_filt, title=None):
     
     # Left plot: True latent state vs. Kalman prediction and filtered estimates
     axs[0].plot(time, V_true[:n], label="True V", color="blue")
-    axs[0].plot(time, V_pred, label="Kalman Prediction", linestyle="--", color="red")
+    # axs[0].plot(time, V_pred, label="Kalman Prediction", linestyle="--", color="red")
     axs[0].plot(time, V_filt, label="Kalman Filter", linestyle="-.", color="green")
     axs[0].set_xlabel("Time")
     axs[0].set_ylabel("Latent Variance V")
@@ -73,16 +73,16 @@ if __name__ == "__main__":
         "delta": 0.2
     }
     T = 1000           # Number of observations for estimation.
-    burn_in = 100      # Burn-in period.
+    burn_in = 0      # Burn-in period.
 
     # Arbitrary diffusion starting value (since we don't know the true V):
     V0_initial = 10.0   # Use this as initial guess for the latent state in filtering
     P0_init = 0.1       # Initial filtering uncertainty
 
     # Simulate the Heston model (the "real" data)
-    noise_t = {'df': 2.5}
+    # noise_t = {'df': 2.5}
     # noise_par = {'alpha': 2.5}
-    V_series, y_series = heston_DGP(T, **true_params, V0=V0_initial, seed=42, noise_dist='t', noise_params=noise_t, burn_in=burn_in)
+    V_series, y_series = heston_DGP(T, **true_params, V0=V0_initial, seed=42, burn_in=burn_in)
 
     # QMLE Estimation: Start with an initial guess reflecting a diffusion process.
     init_guess = np.array([0.5, 0.5, 0.5, 0.5])
