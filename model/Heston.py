@@ -45,7 +45,6 @@ class Heston:
             V[i+1] = np.abs(V[i] + self.kappa*(self.theta - V[i])*dt + self.xi*np.sqrt(V[i])*dWv)
             
             # Log-price update (4.5a)
-            # R_i = (mu - 0.5*V[i])*dt + sqrt((1-rho^2)*V[i])*dWs + rho*sqrt(V[i])*dWv
             dX = (self.mu - 0.5*V[i])*dt + np.sqrt((1.0 - self.rho**2)*V[i])*dWs + self.rho*np.sqrt(V[i])*dWv
             
             X[i+1] = X[i] + dX
@@ -54,6 +53,33 @@ class Heston:
         S = np.exp(X)
         return S, V
     
+    def simulate(self, S0, V0, T_years=10, trading_days=252, intraday_intervals=39, seed=None):
+        # intraday_intervals is defined based on 10-min intervals per trading day (6.5 hours)
+        if seed is not None: 
+            np.random.seed(seed)
+
+        N = int(T_years * trading_days * intraday_intervals)
+        _, dt = np.linspace(0, T_years, N, retstep=True)
+
+        S_high, V_high = self.path(S0, V0, N, T_years)
+
+        # Reshape to daily matrices
+        S_intraday = S_high.reshape(-1, intraday_intervals)   # shape: (2500, 39)
+        V_intraday = V_high.reshape(-1, intraday_intervals)   # shape: (2500, 39)
+
+        S_daily = S_intraday[:, -1]  # use end-of-day prices
+
+        # True daily integrated variance from model
+        daily_true_V = V_intraday.sum(axis=1) * dt
+
+        # Realized variance from intraday log-returns
+        log_returns_intraday = np.log(S_intraday[:, 1:] / S_intraday[:, :-1])
+        daily_RV = (log_returns_intraday ** 2).sum(axis=1)
+
+        time_daily = np.linspace(0, T_years, S_daily.shape[0])
+
+        return time_daily, S_daily, daily_true_V, daily_RV
+
 if __name__ == "__main__":
     # For a 5-year simulation
     trading_days = 252 * 5       # Total trading days (5 years)
