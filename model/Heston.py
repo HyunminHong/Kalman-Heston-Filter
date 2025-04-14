@@ -49,11 +49,10 @@ class Heston:
             
             X[i+1] = X[i] + dX
 
-        # Exponentiate to get the actual price path
         S = np.exp(X)
         return S, V
     
-    def simulate(self, S0, V0, T_years=10, trading_days=252, intraday_intervals=39, seed=None):
+    def path_simulation(self, S0, V0, T_years=10, trading_days=252, intraday_intervals=39, seed=None):
         # intraday_intervals is defined based on 10-min intervals per trading day (6.5 hours)
         if seed is not None: 
             np.random.seed(seed)
@@ -81,65 +80,44 @@ class Heston:
         return time_daily, S_daily, daily_true_V, daily_RV
 
 if __name__ == "__main__":
-    # For a 5-year simulation
-    trading_days = 252 * 5       # Total trading days (5 years)
-    intraday_intervals = 39      # 10-min intervals in one trading day (6.5 trading hours)
-    N = trading_days * intraday_intervals + 1  # Total number of time steps
-    T = 5.0  # Total time in years
+    # Initializations
+    S0 = 100
+    V0 = 0.04
+    params = {
+        'mu': 0.05, 
+        'rho': -0.8,
+        'kappa': 1,
+        'theta': 0.04,
+        'xi': 0.2
+    }
+    
+    std_asy = np.sqrt(params['theta'] * params['xi']**2 / (2 * params['kappa']))  # asymptotic standard deviation for the CIR process
+    assert 2 * params['kappa'] * params['theta'] > params['xi']**2  # Feller condition
 
-    dt = T / (N-1)
+    Hest = Heston(**params)
+    time_daily, S_daily, daily_true_V, daily_RV = Hest.path_simulation(S0, V0, T_years=10, trading_days=252, intraday_intervals=39, seed=10)
 
-    heston = Heston(mu=0.1, rho=-0., xi=0.2, theta=0.1, kappa=0.1)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(24, 4))
 
-    # Simulate paths for asset price (S) and variance (V)
-    S, V = heston.path(S0=1, V0=0.01, N=N, T=T, seed=42)
+    ax1.plot(time_daily, S_daily)
+    ax1.set_title("Daily Stock Prices (End-of-Day)")
+    ax1.set_xlabel("Time (years)")
+    ax1.set_ylabel("Stock Price")
 
-    # Compute the intraday 10-min log returns from prices
-    log_prices = np.log(S)
-    intraday_returns = np.diff(log_prices)  # 10-min log returns
+    ax2.plot(time_daily[1:], np.diff(np.log(S_daily)))
+    ax2.set_title("Daily Log Return")
+    ax2.set_xlabel("Time (years)")
+    ax2.set_ylabel("Log Return")
 
-    daily_returns = []
-    daily_rv = []
+    ax3.plot(time_daily, daily_true_V)
+    ax3.set_title("Daily True Integrated Variance")
+    ax3.set_xlabel("Time (years)")
+    ax3.set_ylabel("Integrated Variance")
 
-    for day in range(trading_days):
-        start_idx = day * intraday_intervals
-        end_idx = (day + 1) * intraday_intervals
-        
-        # Extract the intraday returns for the day.
-        day_returns = intraday_returns[start_idx:end_idx]
-        
-        # Daily log return: sum of intraday returns.
-        daily_return = np.sum(day_returns)
-        daily_returns.append(daily_return)
-        
-        # Daily realized variance (RV): sum of squared intraday returns.
-        day_realized_var = np.sum(day_returns**2)
-        daily_rv.append(day_realized_var)
-
-    daily_returns = np.array(daily_returns)
-    daily_rv = np.array(daily_rv)
-
-    # Also, downsample the latent variance V to daily by computing the average variance for each day.
-    daily_true_var = [np.mean(V[day * intraday_intervals:(day + 1) * intraday_intervals]) for day in range(trading_days)]
-    daily_true_var = np.array(daily_true_var)
-
-    days = np.arange(1, trading_days + 1)
-
-    fig, axes = plt.subplots(2, 1, figsize=(12, 10))
-
-    # First subplot: Daily Realized Variance vs. Daily Latent Variance (True V)
-    axes[0].plot(days, daily_true_var, label="Daily Latent Variance (True V)", linewidth=2)
-    axes[0].plot(days, daily_rv * 252, label="Daily Realized Variance (RV)", linestyle='--', color='orange')
-    axes[0].set_title("Daily Latent Variance vs. Realized Variance over 5 Years")
-    axes[0].set_xlabel("Trading Day")
-    axes[0].set_ylabel("Variance")
-    axes[0].legend()
-
-    # Second subplot: Daily Log Returns
-    axes[1].plot(days, daily_returns, marker='o', linestyle='-', color='green')
-    axes[1].set_title("Daily Log Returns over 5 Years")
-    axes[1].set_xlabel("Trading Day")
-    axes[1].set_ylabel("Daily Log Return")
+    ax4.plot(time_daily, daily_RV)
+    ax4.set_title("Daily Realized Volatility (10-min data)")
+    ax4.set_xlabel("Time (years)")
+    ax4.set_ylabel("Realized Volatility")
 
     plt.tight_layout()
     plt.show()
