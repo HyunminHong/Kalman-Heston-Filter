@@ -221,7 +221,7 @@ class HestonKalmanFilter:
                 innovation = y[t].reshape(-1, 1) - y_pred
                 
                 # Measurement noise covariance using previous filtered variance
-                R_mat = (V_filt_prev * (sigma_vec @ sigma_vec.T)) + (1e-6 * np.eye(2))
+                R_mat = (V_filt_prev * (sigma_vec @ sigma_vec.T)) + (1e-8 * np.eye(2))
                 R_mat = (R_mat + R_mat.T) / 2  # Ensure symmetry
                 
                 # Innovation covariance: S = beta*P_pred[t]*beta^T + R_mat
@@ -245,10 +245,10 @@ class HestonKalmanFilter:
                 
                 # Measurement noise variance (R) based on previous filtered state
                 if self.measurement_type == MeasurementType.RETURNS:
-                    R_t = V_filt_prev * self.dt + 1e-6  # Variance of returns
+                    R_t = V_filt_prev * self.dt  # Variance of returns
                 else:  # MeasurementType.RV
                     sigma = param_dict['sigma']
-                    R_t = sigma**2 * V_filt_prev * self.dt + 1e-6 # Variance of RV measurement
+                    R_t = sigma**2 * V_filt_prev * self.dt # Variance of RV measurement
                 
                 # Innovation (measurement residual)
                 y_pred = mu_val + beta_val * V_pred[t]
@@ -321,7 +321,7 @@ class HestonKalmanFilter:
                 y_pred = mu_vec + beta_vec * V_pred[t]
                 
                 # Measurement noise covariance using previous filtered variance
-                R_mat = (V_filt_prev * (sigma_vec @ sigma_vec.T)) + (1e-6 * np.eye(2))
+                R_mat = (V_filt_prev * (sigma_vec @ sigma_vec.T)) + (1e-8 * np.eye(2))
                 R_mat = (R_mat + R_mat.T) / 2  # Ensure symmetry
                 
                 # Innovation
@@ -445,18 +445,18 @@ class HestonKalmanFilter:
                 initial_params = np.array([kappa_init, theta_init, xi_init, mu_init, sigma_init])
         
         if bounds is None:
-            kappa_bounds = (1e-6, 20.0)
-            theta_bounds = (1e-6, 1.0)
-            xi_bounds = (1e-6, 3.0)
+            kappa_bounds = (1e-6, 1 - 1e-6)
+            theta_bounds = (1e-6, None)
+            xi_bounds = (1e-6, None)
             
             if self.measurement_type == MeasurementType.RETURNS:
-                mu_bounds = (-1.0, 1.0)
+                mu_bounds = (-0.2, 0.2)
                 bounds = [kappa_bounds, theta_bounds, xi_bounds, mu_bounds]
             elif self.measurement_type == MeasurementType.RV:
                 sigma_bounds = (1e-6, 2.0)
                 bounds = [kappa_bounds, theta_bounds, xi_bounds, sigma_bounds]
             else:  # MeasurementType.BOTH
-                mu_bounds = (-1.0, 1.0)
+                mu_bounds = (-0.2, 0.2)
                 sigma_bounds = (1e-6, 2.0)
                 bounds = [kappa_bounds, theta_bounds, xi_bounds, mu_bounds, sigma_bounds]
         
