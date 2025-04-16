@@ -1,26 +1,15 @@
 # Kalman-Heston-Filter
-Approximate the Heston Model via Kalman-type filtering, assuming linear and Gaussian noise 
+Approximate the Heston Model via Kalman-like filtering, assuming linear and Gaussian noise 
 
 TODO: 
-* Make different arguments for return and volatility in the Heston model (give different distributional shock)
-* Note that thicker tail shock is not a driver of the volatility clustering, $\beta$ is the driver of the volatility clustering
-* Find the better measure (than a simple deviation) of the fitted values
-* Make a prediction for three different distributions
-* Try unscented Kalman filter for t- and Pareto distribution and measure the performance (first do in-sample, then evolve to out-sample)
+* Check whether two-dimensional case is well implemented. It seem to have lags compared to 1-dim measurements.
+* Parameter consistency? Three different measurement spaces assume technically different models. Justify this.
 
-![output](https://github.com/user-attachments/assets/3409b1de-a275-4e76-bef0-b2be1077b0ca)
-One-step forecat of Kalman-like Heston (ML) vs. GARCH (ML) under normal noise DGP.
-
-
-![Heston_Kalman_sim](https://github.com/user-attachments/assets/ccbdd797-1ca3-4d81-b753-82852c9edbf8)
-Kalman approximation of the Heston model with normal noise.
-
-![normal_vs_pareto](https://github.com/user-attachments/assets/2fd24817-f592-4b1c-a938-b67a2e7ea999)
-Kalman approxmiation (assuming true parameters are known) of the Heston model with Pareto ($\alpha = 3$) noise.
-
-![normal_vs_t](https://github.com/user-attachments/assets/389beaaa-69a8-4fdd-88b5-4b2f9af5d215)
-Kalman approxmiation (assuming true parameters are known) of the Heston model with Pareto ($df = 5$) noise.
-
+![simulation_filtering](https://github.com/user-attachments/assets/f273bbd4-67b8-40b2-af30-53c3feee9c45)
+Heston Kalman-like filter applied to:
+1. Returns and Realized Variance (RV) (2-dim measurement space)
+2. Returns (1-dim measurement space)
+3. Realized Variance (RV) (1-dim measurement space)
 
 ![VSP](https://github.com/user-attachments/assets/864d7a77-ca3f-4d2b-ba5e-3d90a126d6a4)
 Volatility Signature Plot (SPY)
