@@ -4,6 +4,7 @@ Approximate the Heston Model via Kalman-like filtering, assuming linear and Gaus
 TODO: 
 * Check whether two-dimensional case is well implemented. It seem to have lags compared to 1-dim measurements.
 * Parameter consistency? Three different measurement spaces assume technically different models. Justify this.
+* Mention "state of the art" method in the literature review part. It can be the particle filter, but justify with other papers.
 
 The below simulation is done in the following manner: 
 1. **Compute total intraday steps**  
