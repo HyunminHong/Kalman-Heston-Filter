@@ -6,7 +6,7 @@ import scipy.special as spec
 from scipy.optimize import fmin, fmin_bfgs
 from scipy.stats import norm
 from numpy.random import gamma
-from filterpy.monte_carlo import systematic_resample, stratified_resample
+from filterpy.monte_carlo import systematic_resample, stratified_resample # type: ignore
 
 class PFHeston(object):
     def __init__(self, y, N=1000, dt=1/250, is_log=False):
