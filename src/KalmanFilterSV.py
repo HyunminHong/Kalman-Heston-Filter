@@ -445,7 +445,7 @@ class HestonKalmanFilter:
                 initial_params = np.array([kappa_init, theta_init, xi_init, mu_init, sigma_init])
         
         if bounds is None:
-            kappa_bounds = (1e-6, 1 - 1e-6)
+            kappa_bounds = (1e-6, None)
             theta_bounds = (1e-6, None)
             xi_bounds = (1e-6, None)
             
@@ -496,6 +496,88 @@ class HestonKalmanFilter:
             'message': result.message,
             'optimization_result': result
         }
+    
+    def get_filtered_variance(self, params: Optional[np.ndarray] = None) -> np.ndarray:
+        """
+        Get filtered variance estimates.
+        
+        Parameters:
+        params : numpy.ndarray, optional
+            Model parameters. If None, use fitted parameters.
+            
+        Returns:
+        V_filt : numpy.ndarray
+            Filtered variance estimates, shape (T,).
+        """
+        if params is None:
+            if self.params_dict is None:
+                raise ValueError("No parameters available. Call fit() first or provide parameters.")
+            if self.measurement_type == MeasurementType.RETURNS:
+                params = np.array([
+                    self.params_dict['kappa'], 
+                    self.params_dict['theta'], 
+                    self.params_dict['xi'], 
+                    self.params_dict['mu']
+                ])
+            elif self.measurement_type == MeasurementType.RV:
+                params = np.array([
+                    self.params_dict['kappa'], 
+                    self.params_dict['theta'], 
+                    self.params_dict['xi'], 
+                    self.params_dict['sigma']
+                ])
+            else:  # MeasurementType.BOTH
+                params = np.array([
+                    self.params_dict['kappa'], 
+                    self.params_dict['theta'], 
+                    self.params_dict['xi'], 
+                    self.params_dict['mu'], 
+                    self.params_dict['sigma']
+                ])
+        
+        filter_result = self.filter(params)
+        return filter_result['V_filt']
+    
+    def get_predicted_variance(self, params: Optional[np.ndarray] = None) -> np.ndarray:
+        """
+        Get predicted variance estimates.
+        
+        Parameters:
+        params : numpy.ndarray, optional
+            Model parameters. If None, use fitted parameters.
+            
+        Returns:
+        V_pred : numpy.ndarray
+            Predicted variance estimates, shape (T,).
+        """
+        if params is None:
+            if self.params_dict is None:
+                raise ValueError("No parameters available. Call fit() first or provide parameters.")
+            if self.measurement_type == MeasurementType.RETURNS:
+                params = np.array([
+                    self.params_dict['kappa'], 
+                    self.params_dict['theta'], 
+                    self.params_dict['xi'], 
+                    self.params_dict['mu']
+                ])
+            elif self.measurement_type == MeasurementType.RV:
+                params = np.array([
+                    self.params_dict['kappa'], 
+                    self.params_dict['theta'], 
+                    self.params_dict['xi'], 
+                    self.params_dict['sigma']
+                ])
+            else:  # MeasurementType.BOTH
+                params = np.array([
+                    self.params_dict['kappa'], 
+                    self.params_dict['theta'], 
+                    self.params_dict['xi'], 
+                    self.params_dict['mu'], 
+                    self.params_dict['sigma']
+                ])
+        
+        filter_result = self.filter(params)
+        return filter_result['V_pred']
     
     def summary(self) -> None:
         """Print a summary of the model and fitted parameters."""
