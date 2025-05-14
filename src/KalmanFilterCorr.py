@@ -1,13 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
-from enum import Enum
 from typing import Dict, Optional, List, Any
-
-class MeasurementType(Enum):
-    """Enum for specifying the type of measurement data."""
-    RETURNS = "returns"
-    RV = "realized_variance"
-    BOTH = "both"
+from src.Utility import MeasurementType
 
 class HestonKalmanFilterCorr:
     """
@@ -59,8 +53,6 @@ class HestonKalmanFilterCorr:
         """
         if self.measurement_type == MeasurementType.RETURNS and returns is None:
             raise ValueError("Returns data is required for RETURNS measurement type.")
-        if self.measurement_type == MeasurementType.RV and rv is None:
-            raise ValueError("RV data is required for RV measurement type.")
         if self.measurement_type == MeasurementType.BOTH and (returns is None or rv is None):
             raise ValueError("Both returns and RV data are required for BOTH measurement type.")
         
@@ -101,8 +93,6 @@ class HestonKalmanFilterCorr:
         if self.measurement_type == MeasurementType.RETURNS:
             param_dict['mu'] = params[3]
             param_dict['rho'] = params[4]
-        elif self.measurement_type == MeasurementType.RV:
-            param_dict['sigma'] = params[3]
         else:  # MeasurementType.BOTH
             param_dict['mu'] = params[3]
             param_dict['sigma'] = params[4]
@@ -128,14 +118,6 @@ class HestonKalmanFilterCorr:
             beta_vec = np.array([[-0.5 * self.dt]])
             sigma_vec = np.array([[np.sqrt(self.dt)]])
             rho_vec = np.array([[param_dict['rho']]])
-            
-        elif self.measurement_type == MeasurementType.RV:
-            # For RV only: mu = 0, beta = dt, sigma = sigma*sqrt(dt)
-            mu_vec = np.array([[0]])
-            beta_vec = np.array([[self.dt]])
-            sigma_vec = np.array([[param_dict['sigma'] * np.sqrt(self.dt)]])
-            rho_vec = np.array([[0]])
-            
         else:  # MeasurementType.BOTH
             # For both returns and RV
             mu_vec = np.array([[param_dict['mu'] * self.dt], [0]])
@@ -155,12 +137,10 @@ class HestonKalmanFilterCorr:
         """
         if self.measurement_type == MeasurementType.RETURNS:
             return self.returns
-        elif self.measurement_type == MeasurementType.RV:
-            return self.rv
         else:  # MeasurementType.BOTH
             return np.column_stack((self.returns, self.rv))
     
-    def filter(self, params: np.ndarray) -> Dict[str, np.ndarray]:
+    def filter(self, params: np.ndarray, returns: Optional[np.ndarray] = None, rv: Optional[np.ndarray] = None) -> Dict[str, np.ndarray]:
         """
         Run Kalman filter using the specified parameters.
         
@@ -186,7 +166,19 @@ class HestonKalmanFilterCorr:
         param_dict = self._get_param_dict(params)
         
         # Get measurement data
-        y = self._get_y_data()
+        if returns is not None or rv is not None:
+            if self.measurement_type == MeasurementType.RETURNS:
+                if returns is None:
+                    raise ValueError("Returns data is required.")
+                y_data = returns
+            else:
+                if returns is None or rv is None:
+                    raise ValueError("Both returns and RV data are required.")
+                y_data = np.column_stack((returns, rv))
+        else:
+            y_data = self._get_y_data()
+            
+        y = y_data
         T = y.shape[0]
         
         # Get measurement model matrices
@@ -297,8 +289,6 @@ class HestonKalmanFilterCorr:
                     P_pred[t] = (1 - kappa * self.dt)**2 * P_filt_prev + (Q * P_corr_pred)
 
                     R_t = V_filt_prev * self.dt  # Variance of returns
-                else:  # MeasurementType.RV
-                    R_t = sigma_val**2 * V_filt_prev * self.dt # Variance of RV measurement
                 
                 # Innovation (measurement residual)
                 y_pred = mu_val + beta_val * V_pred[t]
@@ -400,9 +390,6 @@ class HestonKalmanFilterCorr:
                 # Measurement noise variance based on measurement type using previous filtered variance
                 if self.measurement_type == MeasurementType.RETURNS:
                     R_t = V_filt_prev * self.dt  # Variance of returns
-                else:  # MeasurementType.RV
-                    sigma = param_dict['sigma']
-                    R_t = sigma**2 * V_filt_prev * self.dt  # Variance of RV measurement
                 
                 # Innovation variance: S = beta^2 * P_pred[t] + R_t
                 S = beta_val**2 * filter_result['P_pred'][t] + R_t
@@ -471,8 +458,6 @@ class HestonKalmanFilterCorr:
         # Check if data is set
         if self.measurement_type == MeasurementType.RETURNS and self.returns is None:
             raise ValueError("Returns data is required for RETURNS measurement type.")
-        if self.measurement_type == MeasurementType.RV and self.rv is None:
-            raise ValueError("RV data is required for RV measurement type.")
         if self.measurement_type == MeasurementType.BOTH and (self.returns is None or self.rv is None):
             raise ValueError("Both returns and RV data are required for BOTH measurement type.")
         
@@ -487,9 +472,6 @@ class HestonKalmanFilterCorr:
                 mu_init = np.mean(self.returns) / self.dt
                 rho_init = 0
                 initial_params = np.array([kappa_init, theta_init, xi_init, mu_init, rho_init])
-            elif self.measurement_type == MeasurementType.RV:
-                sigma_init = 0.5
-                initial_params = np.array([kappa_init, theta_init, xi_init, sigma_init])
             else:  # MeasurementType.BOTH
                 mu_init = np.mean(self.returns) / self.dt
                 sigma_init = 0.5
@@ -505,9 +487,6 @@ class HestonKalmanFilterCorr:
                 mu_bounds = (-0.2, 0.2)
                 rho_bounds = (-0.99, 0.99)
                 bounds = [kappa_bounds, theta_bounds, xi_bounds, mu_bounds, rho_bounds]
-            elif self.measurement_type == MeasurementType.RV:
-                sigma_bounds = (1e-6, 2.0)
-                bounds = [kappa_bounds, theta_bounds, xi_bounds, sigma_bounds]
             else:  # MeasurementType.BOTH
                 mu_bounds = (-0.2, 0.2)
                 sigma_bounds = (1e-6, 2.0)
@@ -574,13 +553,6 @@ class HestonKalmanFilterCorr:
                     self.params_dict['mu'],
                     self.params_dict['rho']
                 ])
-            elif self.measurement_type == MeasurementType.RV:
-                params = np.array([
-                    self.params_dict['kappa'], 
-                    self.params_dict['theta'], 
-                    self.params_dict['xi'], 
-                    self.params_dict['sigma']
-                ])
             else:  # MeasurementType.BOTH
                 params = np.array([
                     self.params_dict['kappa'], 
@@ -593,47 +565,6 @@ class HestonKalmanFilterCorr:
         
         filter_result = self.filter(params)
         return filter_result['V_filt']
-    
-    def get_predicted_variance(self, params: Optional[np.ndarray] = None) -> np.ndarray:
-        """
-        Get predicted variance estimates.
-        
-        Parameters:
-        params : numpy.ndarray, optional
-            Model parameters. If None, use fitted parameters.
-            
-        Returns:
-        V_pred : numpy.ndarray
-            Predicted variance estimates, shape (T,).
-        """
-        if params is None:
-            if self.params_dict is None:
-                raise ValueError("No parameters available. Call fit() first or provide parameters.")
-            if self.measurement_type == MeasurementType.RETURNS:
-                params = np.array([
-                    self.params_dict['kappa'], 
-                    self.params_dict['theta'], 
-                    self.params_dict['xi'], 
-                    self.params_dict['mu']
-                ])
-            elif self.measurement_type == MeasurementType.RV:
-                params = np.array([
-                    self.params_dict['kappa'], 
-                    self.params_dict['theta'], 
-                    self.params_dict['xi'], 
-                    self.params_dict['sigma']
-                ])
-            else:  # MeasurementType.BOTH
-                params = np.array([
-                    self.params_dict['kappa'], 
-                    self.params_dict['theta'], 
-                    self.params_dict['xi'], 
-                    self.params_dict['mu'], 
-                    self.params_dict['sigma']
-                ])
-        
-        filter_result = self.filter(params)
-        return filter_result['V_pred']
     
     def summary(self) -> None:
         """Print a summary of the model and fitted parameters."""

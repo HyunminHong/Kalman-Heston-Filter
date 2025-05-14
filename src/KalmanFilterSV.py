@@ -1,13 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
-from enum import Enum
 from typing import Dict, Optional, List, Any
-
-class MeasurementType(Enum):
-    """Enum for specifying the type of measurement data."""
-    RETURNS = "returns"
-    RV = "realized_variance"
-    BOTH = "both"
+from src.Utility import MeasurementType
 
 class HestonKalmanFilter:
     """
@@ -155,7 +149,7 @@ class HestonKalmanFilter:
         else:  # MeasurementType.BOTH
             return np.column_stack((self.returns, self.rv))
     
-    def filter(self, params: np.ndarray) -> Dict[str, np.ndarray]:
+    def filter(self, params: np.ndarray, returns: Optional[np.ndarray] = None, rv: Optional[np.ndarray] = None) -> Dict[str, np.ndarray]:
         """
         Run Kalman filter using the specified parameters.
         
@@ -181,7 +175,23 @@ class HestonKalmanFilter:
         param_dict = self._get_param_dict(params)
         
         # Get measurement data
-        y = self._get_y_data()
+        if returns is not None or rv is not None:
+            if self.measurement_type == MeasurementType.RETURNS:
+                if returns is None:
+                    raise ValueError("Returns data is required.")
+                y_data = returns
+            elif self.measurement_type == MeasurementType.RV:
+                if rv is None:
+                    raise ValueError("RV data is required.")
+                y_data = rv
+            else:
+                if returns is None or rv is None:
+                    raise ValueError("Both returns and RV data are required.")
+                y_data = np.column_stack((returns, rv))
+        else:
+            y_data = self._get_y_data()
+
+        y = y_data
         T = y.shape[0]
         
         # Get measurement model matrices
@@ -497,13 +507,17 @@ class HestonKalmanFilter:
             'optimization_result': result
         }
     
-    def get_filtered_variance(self, params: Optional[np.ndarray] = None) -> np.ndarray:
+    def get_filtered_variance(self, params: Optional[np.ndarray] = None, returns: Optional[np.ndarray] = None, rv: Optional[np.ndarray] = None) -> np.ndarray:
         """
-        Get filtered variance estimates.
+        Get filtered variance estimates, optionally on new data.
         
         Parameters:
         params : numpy.ndarray, optional
             Model parameters. If None, use fitted parameters.
+        returns : numpy.ndarray, optional
+            Optional new returns data to use instead of internal data.
+        rv : numpy.ndarray, optional
+            Optional new realized variance data to use instead of internal data.
             
         Returns:
         V_filt : numpy.ndarray
@@ -535,49 +549,9 @@ class HestonKalmanFilter:
                     self.params_dict['sigma']
                 ])
         
-        filter_result = self.filter(params)
+        filter_result = self.filter(params, returns=returns, rv=rv)
         return filter_result['V_filt']
-    
-    def get_predicted_variance(self, params: Optional[np.ndarray] = None) -> np.ndarray:
-        """
-        Get predicted variance estimates.
-        
-        Parameters:
-        params : numpy.ndarray, optional
-            Model parameters. If None, use fitted parameters.
-            
-        Returns:
-        V_pred : numpy.ndarray
-            Predicted variance estimates, shape (T,).
-        """
-        if params is None:
-            if self.params_dict is None:
-                raise ValueError("No parameters available. Call fit() first or provide parameters.")
-            if self.measurement_type == MeasurementType.RETURNS:
-                params = np.array([
-                    self.params_dict['kappa'], 
-                    self.params_dict['theta'], 
-                    self.params_dict['xi'], 
-                    self.params_dict['mu']
-                ])
-            elif self.measurement_type == MeasurementType.RV:
-                params = np.array([
-                    self.params_dict['kappa'], 
-                    self.params_dict['theta'], 
-                    self.params_dict['xi'], 
-                    self.params_dict['sigma']
-                ])
-            else:  # MeasurementType.BOTH
-                params = np.array([
-                    self.params_dict['kappa'], 
-                    self.params_dict['theta'], 
-                    self.params_dict['xi'], 
-                    self.params_dict['mu'], 
-                    self.params_dict['sigma']
-                ])
-        
-        filter_result = self.filter(params)
-        return filter_result['V_pred']
+
     
     def summary(self) -> None:
         """Print a summary of the model and fitted parameters."""
