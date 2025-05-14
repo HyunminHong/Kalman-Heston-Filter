@@ -83,45 +83,48 @@ class Heston:
 
         return time_daily, S_daily, daily_returns, daily_true_V, daily_RV
 
-if __name__ == "__main__":
-    # Initializations
+if __name__ == "__main__":    
+    # Set initial conditions and simulation parameters
     S0 = 100
     V0 = 0.04
     params = {
-        'mu': 0.05, 
+        'mu': 0.05,
         'rho': -0.8,
-        'kappa': 1,
+        'kappa': 2.0,
         'theta': 0.04,
         'xi': 0.2
     }
-    
-    std_asy = np.sqrt(params['theta'] * params['xi']**2 / (2 * params['kappa']))  # asymptotic standard deviation for the CIR process
-    assert 2 * params['kappa'] * params['theta'] > params['xi']**2  # Feller condition
+    std_asy = np.sqrt(params['theta'] * params['xi']**2 / (2 * params['kappa']))
+    assert 2 * params['kappa'] * params['theta'] > params['xi']**2, "Feller condition is violated!"
 
     Hest = Heston(**params)
-    time_daily, S_daily, daily_true_V, daily_RV = Hest.path_simulation(S0, V0, T_years=10, trading_days=252, intraday_intervals=39, seed=10)
+    time_daily, S_daily, daily_returns, daily_true_V, daily_RV = Hest.path_simulation(
+        S0, V0, T_years=20, trading_days=252, intraday_intervals=39, seed=1
+    )
+    R_daily = daily_returns.copy()
 
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(24, 4))
+    fig, axes = plt.subplots(2, 2, figsize=(10, 6))
 
-    ax1.plot(time_daily, S_daily)
-    ax1.set_title("Daily Stock Prices (End-of-Day)")
-    ax1.set_xlabel("Time (years)")
-    ax1.set_ylabel("Stock Price")
+    # Subplot for BOTH measurements
+    axes[0,0].plot(time_daily, S_daily, label="Daily Stock Price", lw=0.8)
+    axes[0,0].set_xlabel("Time (years)")
+    axes[0,0].set_ylabel("Price Level")
+    axes[0,0].legend(loc="upper right")
 
-    ax2.plot(time_daily[1:], np.diff(np.log(S_daily)))
-    ax2.set_title("Daily Log Return")
-    ax2.set_xlabel("Time (years)")
-    ax2.set_ylabel("Log Return")
+    # Subplot for RETURNS measurement
+    axes[0,1].plot(time_daily, daily_returns, label="Daily Returns", lw=0.8)
+    axes[0,1].set_xlabel("Time (years)")
+    axes[0,1].legend(loc="upper right")
 
-    ax3.plot(time_daily, daily_true_V)
-    ax3.set_title("Daily True Integrated Variance")
-    ax3.set_xlabel("Time (years)")
-    ax3.set_ylabel("Integrated Variance")
+    # Subplot for RV measurement
+    axes[1,0].plot(time_daily, daily_true_V, label="True Integrated Variance", lw=0.8)
+    axes[1,0].set_xlabel("Time (years)")
+    axes[1,0].legend(loc="upper right")
 
-    ax4.plot(time_daily, daily_RV)
-    ax4.set_title("Daily Realized Volatility (10-min data)")
-    ax4.set_xlabel("Time (years)")
-    ax4.set_ylabel("Realized Volatility")
+    # Subplot for RV measurement
+    axes[1,1].plot(time_daily, daily_RV, label="Daily Realized Variance", lw=0.8)
+    axes[1,1].set_xlabel("Time (years)")
+    axes[1,1].legend(loc="upper right")
 
     plt.tight_layout()
     plt.show()
