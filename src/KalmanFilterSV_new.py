@@ -1,13 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
-from enum import Enum
 from typing import Dict, Optional, List, Any
-
-class MeasurementType(Enum):
-    """Enum for specifying the type of measurement data."""
-    RETURNS = "returns"
-    RV = "realized_variance"
-    BOTH = "both"
+from src.Utility import MeasurementType
 
 class HestonKalmanFilter:
     """
