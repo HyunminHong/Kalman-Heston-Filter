@@ -89,6 +89,7 @@ class Utility:
         daily_returns,
         split_index,
         burnin=252,
+        save_path=None,
         figsize=(18, 6)
     ):
         """
@@ -124,10 +125,6 @@ class Utility:
             assert len(filt_train) == len(true_train), f"In-sample length mismatch for {titles[i]}"
             assert len(filt_test) == len(true_test), f"Out-of-sample length mismatch for {titles[i]}"
     
-            # RMSE
-            rmse_is = np.sqrt(np.mean((filt_train - true_train) ** 2))
-            rmse_oos = np.sqrt(np.mean((filt_test - true_test) ** 2))
-    
             # Plot
             ax.plot(time_daily[burnin:], daily_true_V[burnin:], label="True Integrated Variance", lw=2)
             ax.plot(time_daily[burnin:split_index], filt_train, label=f"{labels[i]} - Train", lw=1.5)
@@ -137,11 +134,14 @@ class Utility:
             ax.axvline(time_daily[split_index], color='black', linestyle='--', lw=1)
             ax.text(time_daily[split_index] + 0.1, ax.get_ylim()[1]*0.95, 'Train/Test Split', color='black')
     
-            ax.set_title(f"{titles[i]} | IS RMSE: {rmse_is:.4e}, OOS RMSE: {rmse_oos:.4e}")
+            ax.set_title(f"{titles[i]}")
             ax.set_xlabel("Time (years)")
             ax.set_ylabel("Variance Level")
             ax.legend(loc="upper right")
             ax.grid(True)
     
         plt.tight_layout()
-        plt.show()
+        if save_path:
+            plt.savefig(save_path, dpi=300)
+        else:
+            plt.show()
