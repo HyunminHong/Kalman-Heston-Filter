@@ -49,22 +49,22 @@ class Utility:
         assert len(filt_train) == len(true_train), f"In-sample length mismatch for {titles[plot_index]}"
         assert len(filt_test) == len(true_test), f"Out-of-sample length mismatch for {titles[plot_index]}"
 
-        rmse_is = np.sqrt(np.mean((filt_train - true_train) ** 2))
-        rmse_oos = np.sqrt(np.mean((filt_test - true_test) ** 2))
+        rmse_is = np.sqrt(np.mean((np.sqrt(filt_train) - np.sqrt(true_train)) ** 2))
+        rmse_oos = np.sqrt(np.mean((np.sqrt(filt_test) - np.sqrt(true_test)) ** 2))
 
         fig, ax = plt.subplots(figsize=(18, 6))
 
-        ax.plot(time_daily[burnin:], daily_true_V[burnin:], label="True Integrated Variance", lw=2)
-        ax.plot(time_daily[burnin:split_index], filt_train, label=f"{labels[plot_index]} - Train", lw=1.5)
-        ax.plot(time_daily[split_index:], filt_test, label=f"{labels[plot_index]} - Test", lw=1.5, linestyle="--")
-        ax.plot(time_daily[burnin:], daily_RV[burnin:], label="Realized Volatility", lw=0.4, linestyle=":")
+        ax.plot(time_daily[burnin:], np.sqrt(daily_true_V[burnin:]), label="True Volatility", lw=2)
+        ax.plot(time_daily[burnin:split_index], np.sqrt(filt_train), label=f"{labels[plot_index]} - Train", lw=1.5)
+        ax.plot(time_daily[split_index:], np.sqrt(filt_test), label=f"{labels[plot_index]} - Test", lw=1.5, linestyle="--")
+        ax.plot(time_daily[burnin:], np.sqrt(daily_RV[burnin:]), label="Realized Volatility", lw=0.4, linestyle=":")
 
         ax.axvline(time_daily[split_index], color='black', linestyle='--', lw=1)
         ax.text(time_daily[split_index] + 0.1, ax.get_ylim()[1]*0.95, 'Train/Test Split', color='black')
 
         ax.set_title(f"Kalman Filter: {titles[plot_index]}")
         ax.set_xlabel("Time (years)")
-        ax.set_ylabel("Variance Level")
+        ax.set_ylabel("Volatility Level")
         ax.legend(loc="upper right")
         ax.grid(True)
 
@@ -126,17 +126,17 @@ class Utility:
             assert len(filt_test) == len(true_test), f"Out-of-sample length mismatch for {titles[i]}"
     
             # Plot
-            ax.plot(time_daily[burnin:], daily_true_V[burnin:], label="True Integrated Variance", lw=2)
-            ax.plot(time_daily[burnin:split_index], filt_train, label=f"{labels[i]} - Train", lw=1.5)
-            ax.plot(time_daily[split_index:], filt_test, label=f"{labels[i]} - Test", lw=1.5, linestyle="--")
-            ax.plot(time_daily[burnin:], daily_RV[burnin:], label="Realized Volatility", lw=0.4, linestyle=":")
+            ax.plot(time_daily[burnin:], np.sqrt(daily_true_V[burnin:]), label="True Volatility", lw=2)
+            ax.plot(time_daily[burnin:split_index], np.sqrt(filt_train), label=f"{labels[i]} - Train", lw=1.5)
+            ax.plot(time_daily[split_index:], np.sqrt(filt_test), label=f"{labels[i]} - Test", lw=1.5, linestyle="--")
+            ax.plot(time_daily[burnin:], np.sqrt(daily_RV[burnin:]), label="Realized Volatility", lw=0.4, linestyle=":")
     
             ax.axvline(time_daily[split_index], color='black', linestyle='--', lw=1)
             ax.text(time_daily[split_index] + 0.1, ax.get_ylim()[1]*0.95, 'Train/Test Split', color='black')
     
             ax.set_title(f"{titles[i]}")
             ax.set_xlabel("Time (years)")
-            ax.set_ylabel("Variance Level")
+            ax.set_ylabel("Volatility Level")
             ax.legend(loc="upper right")
             ax.grid(True)
     
