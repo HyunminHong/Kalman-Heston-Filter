@@ -142,6 +142,6 @@ class Utility:
     
         plt.tight_layout()
         if save_path:
-            plt.savefig(save_path, dpi=300)
+            plt.savefig(save_path, dpi=200)
         else:
             plt.show()
