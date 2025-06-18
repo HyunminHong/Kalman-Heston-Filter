@@ -63,8 +63,8 @@ class Heston:
         S_high, V_high = self.path(S0, V0, N, T_years)
 
         # Reshape to daily matrices
-        S_intraday = S_high.reshape(-1, intraday_intervals)   # shape: (2500, 39)
-        V_intraday = V_high.reshape(-1, intraday_intervals)   # shape: (2500, 39)
+        S_intraday = S_high.reshape(-1, intraday_intervals)   # shape: (2520, 39)
+        V_intraday = V_high.reshape(-1, intraday_intervals)   # shape: (2520, 39)
 
         S_daily = S_intraday[:, -1]  # use end-of-day prices
         daily_returns = np.diff(np.log(S_daily))
